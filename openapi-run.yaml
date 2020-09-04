@@ -1,0 +1,44 @@
+---
+openapi: 3.0.1
+info:
+  title: Generated API
+  version: "1.0"
+paths:
+  /secured:
+    get:
+      responses:
+        "200":
+          description: OK
+  /slide:
+    get:
+      responses:
+        "200":
+          description: OK
+    post:
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                slide:
+                  type: array
+                  items:
+                    format: byte
+                    type: string
+      responses:
+        "200":
+          description: OK
+  /slide/{key}:
+    get:
+      parameters:
+      - name: key
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
