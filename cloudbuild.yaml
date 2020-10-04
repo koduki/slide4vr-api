@@ -6,6 +6,12 @@ steps:
 - name: 'gcr.io/cloud-builders/docker'
   args: ['push', 'gcr.io/$PROJECT_ID/slide4vr-api']
 - name: 'gcr.io/cloud-builders/gcloud'
-  args: ['run', 'deploy', 'slide4vr-api', '--image', 'gcr.io/$PROJECT_ID/slide4vr-api', '--region', 'us-central1', '--platform', 'managed', '--allow-unauthenticated']
+  args: ['run', 'deploy', 'slide4vr-api', 
+  '--image', 'gcr.io/$PROJECT_ID/slide4vr-api', 
+  '--region', 'us-central1', 
+  '--platform', 'managed', 
+  '--allow-unauthenticated',
+  '--service-account', 'slide2vr-api@slide2vr.iam.gserviceaccount.com'
+  ]
 images:
 - gcr.io/$PROJECT_ID/slide4vr-api
