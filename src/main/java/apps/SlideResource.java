@@ -20,7 +20,9 @@ import javax.ws.rs.core.SecurityContext;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import dev.nklab.jl2.web.profile.WebTrace;
 import dev.nklab.jl2.web.logging.Logger;
+import java.text.ParseException;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.QueryParam;
 import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
 
 @Path("/slide")
@@ -42,7 +44,7 @@ public class SlideResource {
     @Produces(MediaType.APPLICATION_JSON)
     @WebTrace
     @Authenticated
-    public Response list(@Context SecurityContext ctx) throws IOException {
+    public Response list(@Context SecurityContext ctx) throws IOException, ParseException {
         var id = ctx.getUserPrincipal().getName();
         logger.debug("getList", $("id", id));
 
@@ -52,19 +54,25 @@ public class SlideResource {
     }
 
     @GET
-    @Path("{key}")
+    @Path("{id}/{key}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @WebTrace
-    @Authenticated
-    public Response get(@Context SecurityContext ctx, @PathParam("key") String key) throws IOException {
-        var id = ctx.getUserPrincipal().getName();
-
-        var printer = new DefaultPrettyPrinter();
-        printer.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
-
-        var item = slideService.getSlide(id, key);
-        var json = new ObjectMapper().writer(printer).writeValueAsString(item);
+    public Response get(@PathParam("id") String id, @PathParam("key") String key, @QueryParam("format") String format) throws IOException {
+        var json = "";
+        if (format == null) {
+            format = "";
+        }
+        switch (format) {
+            case "vcas":
+                var printer = new DefaultPrettyPrinter();
+                printer.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
+                json = new ObjectMapper().writer(printer)
+                        .writeValueAsString(slideService.getSlide4Vcas(id, key));
+                break;
+            default:
+                json = new ObjectMapper().writeValueAsString(slideService.getSlide(id, key));
+        }
 
         return Response.ok(json)
                 .build();

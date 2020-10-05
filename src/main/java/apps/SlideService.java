@@ -17,6 +17,7 @@ import java.util.TimeZone;
 import javax.enterprise.context.Dependent;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import dev.nklab.jl2.web.profile.Trace;
+import java.text.ParseException;
 import java.util.UUID;
 import javax.inject.Inject;
 
@@ -71,26 +72,42 @@ public class SlideService {
     }
 
     @Trace
-    public Map<String, Map<String, List<String>>> getSlide(String userId, String key) {
-        var baseUrl = "https://storage.googleapis.com";
+    public Map<String, Object> getSlide(String userId, String key) {
+        var datastore = DatastoreOptions.getDefaultInstance().getService();
+        var slideKey = datastore.newKeyFactory()
+                .addAncestors(PathElement.of("User", userId))
+                .setKind("Slide")
+                .newKey(key);
+        var slide = datastore.get(slideKey);
+        var items = getSlideItems(userId, key);
 
+        return Map.of(
+                "title", slide.getString("title"),
+                "created_at", slide.getString("created_at"),
+                "slides", items);
+    }
+
+    @Trace
+    public Map<String, Map<String, List<String>>> getSlide4Vcas(String userId, String key) {
+        var items = getSlideItems(userId, key);
+        return Map.of("whiteboard", Map.of("source_urls", items));
+    }
+
+    List<String> getSlideItems(String userId, String key) {
+        var baseUrl = "https://storage.googleapis.com";
         var storage = StorageOptions.newBuilder().setProjectId(projectId).build().getService();
         var bucket = storage.get(slideBucket);
         var option = Storage.BlobListOption.prefix(userId + "/" + key);
-
         var items = bucket.list(option).iterateAll();
-
         var result = (List<String>) new ArrayList<String>();
         for (var x : items) {
             result.add(baseUrl + "/" + slideBucket + "/" + x.getName());
         }
-        var item = Map.of("whiteboard", Map.of("source_urls", result));
-
-        return item;
+        return result;
     }
 
     @Trace
-    public List<Map<String, Object>> listSlides(String userId) {
+    public List<Map<String, Object>> listSlides(String userId) throws ParseException {
         var datastore = DatastoreOptions.getDefaultInstance().getService();
         //        var query = Query.newGqlQueryBuilder(Query.ResultType.ENTITY,
 //                "SELECT * FROM Slide WHERE __key__ HAS ANCESTOR KEY(User, @id)")
@@ -108,10 +125,19 @@ public class SlideService {
             result.add(Map.of(
                     "key", slide.getKey().getName(),
                     "title", slide.getString("title"),
+                    "thumbnail", (slide.contains("thumbnail")) ? slide.getString("thumbnail") : "",
                     "is_uploaded", (slide.contains("is_uploaded")) ? slide.getBoolean("is_uploaded") : "false",
-                    "created_at", slide.getString("created_at")
+                    "created_at", toDate(slide.getString("created_at"))
             ));
         }
         return result;
+    }
+
+    Date toDate(String date) throws ParseException {
+        var format = new SimpleDateFormat("yyyy-MM-dd hh:mm");
+        format.setTimeZone(TimeZone.getTimeZone("UTC"));
+        var ymd = date.split("T")[0];
+        var time = date.split("T")[1];
+        return format.parse(ymd + " " + time);
     }
 }
