@@ -64,4 +64,4 @@ run-local-*.sh
 
 # Production Configuration
 .env.production
-
+.env
