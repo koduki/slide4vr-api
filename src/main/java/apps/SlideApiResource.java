@@ -1,45 +1,35 @@
 package apps;
 
-import static dev.nklab.jl2.Extentions.*;
-import com.fasterxml.jackson.core.util.DefaultIndenter;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.HttpHeaders;
-import com.google.cloud.datastore.DatastoreOptions;
-import com.google.cloud.datastore.Entity;
-import com.google.cloud.datastore.PathElement;
-import com.google.cloud.datastore.Query;
-import static com.google.cloud.datastore.StructuredQuery.PropertyFilter.*;
-import static com.google.cloud.datastore.StructuredQuery.CompositeFilter.*;
+import static dev.nklab.jl2.Extentions.$;
 
-import io.quarkus.security.Authenticated;
 import java.io.IOException;
+import java.text.ParseException;
+import java.util.Map;
 
-import javax.annotation.security.PermitAll;
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
-import org.eclipse.microprofile.jwt.JsonWebToken;
-import dev.nklab.jl2.web.profile.WebTrace;
-import dev.nklab.jl2.web.logging.Logger;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.TimeZone;
-import java.util.UUID;
-import java.util.Date;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.QueryParam;
+
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
+
+import dev.nklab.jl2.web.logging.Logger;
+import dev.nklab.jl2.web.profile.WebTrace;
+import io.quarkus.security.Authenticated;
 
 @Path("/api/slide")
 public class SlideApiResource {
@@ -52,6 +42,9 @@ public class SlideApiResource {
     @Inject
     Pptx2pngService pptx2pngService;
 
+    @Inject
+    TokenService tokenService;
+
     @GET
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -62,69 +55,35 @@ public class SlideApiResource {
         // System.out.println(token2);
         // var token = generate(userId);
 
-        var userId = getUserId(token);
+        var userId = tokenService.getUserId(token);
         System.out.println(userId);
-        System.out.println(getToken(userId));
- 
+        System.out.println(tokenService.getToken(userId));
+
         logger.debug("getList", $("id", userId));
 
         var slides = slideService.listSlides(userId);
-        return Response.ok(new ObjectMapper().writeValueAsString(slides))
-        .build();
+        return Response.ok(new ObjectMapper().writeValueAsString(slides)).build();
     }
 
-    private String generate(final String userId) {
-        final var tz = TimeZone.getTimeZone("UTC");
-        final var df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
-        df.setTimeZone(tz);
+    @GET
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @WebTrace
+    @Path("user")
+    public Response getUser(@HeaderParam("x-slide4vr-auth") String token) throws IOException, ParseException {
+        // var userId = "0m3ItnvCMQhbACV9rR5mkdmFOns2";
 
-        final var datastore = DatastoreOptions.getDefaultInstance().getService();
+        // System.out.println(token2);
+        // var token = generate(userId);
 
-        var query = Query.newEntityQueryBuilder().setKind("ApplicationToken").setFilter(
-                and(hasAncestor(datastore.newKeyFactory().setKind("User").newKey(userId)), eq("is_enable", true)))
-                .build();
-        var rs = datastore.run(query);
-        while (rs.hasNext()) {
-            var e = Entity.newBuilder(rs.next()).set("is_enable", false).set("updated_at", df.format(new Date()))
-                    .build();
-            datastore.update(e);
-        }
+        var userId = tokenService.getUserId(token);
+        System.out.println(userId);
+        System.out.println(tokenService.getToken(userId));
 
-        var token = UUID.randomUUID().toString();
-        var tokenKey = datastore.newKeyFactory().addAncestors(PathElement.of("User", userId))
-                .setKind("ApplicationToken").newKey();
-        var entity = Entity.newBuilder(tokenKey).set("token", token).set("is_enable", true)
-                .set("created_at", df.format(new Date())).set("updated_at", df.format(new Date())).build();
-        datastore.put(entity);
+        logger.debug("getList", $("id", userId));
 
-        return token;
-    }
-
-    private String getToken(final String userId) {
-        var datastore = DatastoreOptions.getDefaultInstance().getService();
-
-        var query = Query.newEntityQueryBuilder().setKind("ApplicationToken").setFilter(
-                and(hasAncestor(datastore.newKeyFactory().setKind("User").newKey(userId)), eq("is_enable", true)))
-                .build();
-        var rs = datastore.run(query);
-        var result = "";
-        while (rs.hasNext()) {
-            result = rs.next().getString("token");
-        }
-        return result;
-    }
-
-    private String getUserId(final String token) {
-        var datastore = DatastoreOptions.getDefaultInstance().getService();
-        System.out.println("query: " + token);
-        var query = Query.newEntityQueryBuilder().setKind("ApplicationToken").setFilter(eq("token", token)).build();
-        var rs = datastore.run(query);
-        var result = "";
-        while (rs.hasNext()) {
-            result = rs.next().getKey().getAncestors().get(0).getName();
-        }
-
-        return result;
+        var slides = slideService.listSlides(userId);
+        return Response.ok(new ObjectMapper().writeValueAsString(Map.of("userId", userId))).build();
     }
 
     @GET
@@ -155,11 +114,11 @@ public class SlideApiResource {
     @Consumes({ MediaType.MULTIPART_FORM_DATA })
     @Produces(MediaType.APPLICATION_JSON)
     @WebTrace
-    @Authenticated
-    public Response create(@Context final SecurityContext ctx, final MultipartFormDataInput form) throws IOException {
+    public Response create(@HeaderParam("x-slide4vr-auth") String token, final MultipartFormDataInput form)
+            throws IOException {
         final var slide = new SlideFormBean(form.getFormDataMap());
 
-        final var id = ctx.getUserPrincipal().getName();
+        final var id = tokenService.getUserId(token);
         final var key = slideService.create(id, slide);
         pptx2pngService.request(id, key, slide.getContentType(), slide.getExtention());
 
