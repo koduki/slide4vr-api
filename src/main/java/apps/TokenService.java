@@ -10,6 +10,7 @@ import java.util.TimeZone;
 import java.util.UUID;
 
 import javax.enterprise.context.Dependent;
+import javax.ws.rs.ForbiddenException;
 
 import com.google.cloud.datastore.DatastoreOptions;
 import com.google.cloud.datastore.Entity;
@@ -57,10 +58,16 @@ public class TokenService {
                 and(hasAncestor(datastore.newKeyFactory().setKind("User").newKey(userId)), eq("is_enable", true)))
                 .build();
         var rs = datastore.run(query);
+        
         var result = "";
         while (rs.hasNext()) {
             result = rs.next().getString("token");
         }
+
+        if (result.isEmpty()){
+            result = generate(userId);
+        }
+
         return result;
     }
 
@@ -72,6 +79,10 @@ public class TokenService {
         var result = "";
         while (rs.hasNext()) {
             result = rs.next().getKey().getAncestors().get(0).getName();
+        }
+
+        if (result.isEmpty()){
+            throw new RuntimeException("Inappropriate Token");
         }
 
         return result;

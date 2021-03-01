@@ -9,6 +9,7 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
@@ -20,6 +21,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
+import javax.ws.rs.ext.ExceptionMapper;
+import javax.ws.rs.ext.Provider;
 
 import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
@@ -45,23 +48,31 @@ public class SlideApiResource {
     @Inject
     TokenService tokenService;
 
+    // @Provider
+    // public static class ForbiddenExceptionMapper implements ExceptionMapper<RuntimeException> {
+    //     @Override
+    //     public Response toResponse(RuntimeException exception) {
+    //         return Response.status(Response.Status.FORBIDDEN).build();
+    //     }
+    // }
+
     @GET
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @WebTrace
-    public Response list(@HeaderParam("x-slide4vr-auth") String token) throws IOException, ParseException {
+    public Response list(@HeaderParam("x-slide4vr-auth") final String token) throws IOException, ParseException {
         // var userId = "0m3ItnvCMQhbACV9rR5mkdmFOns2";
 
         // System.out.println(token2);
         // var token = generate(userId);
 
-        var userId = tokenService.getUserId(token);
+        final var userId = tokenService.getUserId(token);
         System.out.println(userId);
         System.out.println(tokenService.getToken(userId));
 
         logger.debug("getList", $("id", userId));
 
-        var slides = slideService.listSlides(userId);
+        final var slides = slideService.listSlides(userId);
         return Response.ok(new ObjectMapper().writeValueAsString(slides)).build();
     }
 
@@ -70,19 +81,19 @@ public class SlideApiResource {
     @Produces(MediaType.APPLICATION_JSON)
     @WebTrace
     @Path("user")
-    public Response getUser(@HeaderParam("x-slide4vr-auth") String token) throws IOException, ParseException {
+    public Response getUser(@HeaderParam("x-slide4vr-auth") final String token) throws IOException, ParseException {
         // var userId = "0m3ItnvCMQhbACV9rR5mkdmFOns2";
 
         // System.out.println(token2);
         // var token = generate(userId);
 
-        var userId = tokenService.getUserId(token);
-        System.out.println(userId);
-        System.out.println(tokenService.getToken(userId));
+        final var userId = tokenService.getUserId(token);
+        // System.out.println(userId);
+        // System.out.println(tokenService.getToken(userId));
 
-        logger.debug("getList", $("id", userId));
+        // logger.debug("getList", $("id", userId));
 
-        var slides = slideService.listSlides(userId);
+
         return Response.ok(new ObjectMapper().writeValueAsString(Map.of("userId", userId))).build();
     }
 
@@ -114,13 +125,13 @@ public class SlideApiResource {
     @Consumes({ MediaType.MULTIPART_FORM_DATA })
     @Produces(MediaType.APPLICATION_JSON)
     @WebTrace
-    public Response create(@HeaderParam("x-slide4vr-auth") String token, final MultipartFormDataInput form)
+    public Response create(@HeaderParam("x-slide4vr-auth") final String token, final MultipartFormDataInput form)
             throws IOException {
         final var slide = new SlideFormBean(form.getFormDataMap());
 
-        final var id = tokenService.getUserId(token);
-        final var key = slideService.create(id, slide);
-        pptx2pngService.request(id, key, slide.getContentType(), slide.getExtention());
+        final var userId = tokenService.getUserId(token);
+        final var key = slideService.create(userId, slide);
+        pptx2pngService.request(userId, key, slide.getContentType(), slide.getExtention());
 
         return Response.ok(String.format("{message:'%s', data-size:'%d'}", slide.getTitle(), slide.getSlide().length))
                 .build();
