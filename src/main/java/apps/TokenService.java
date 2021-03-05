@@ -41,7 +41,7 @@ public class TokenService {
             datastore.update(e);
         }
 
-        var token = UUID.randomUUID().toString();
+        var token = UUID.randomUUID().toString().replaceAll("-", "");
         var tokenKey = datastore.newKeyFactory().addAncestors(PathElement.of("User", userId))
                 .setKind("ApplicationToken").newKey();
         var entity = Entity.newBuilder(tokenKey).set("token", token).set("is_enable", true)
