@@ -9,7 +9,6 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
-import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
@@ -21,8 +20,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
-import javax.ws.rs.ext.ExceptionMapper;
-import javax.ws.rs.ext.Provider;
 
 import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
@@ -61,12 +58,7 @@ public class SlideApiResource {
     @Produces(MediaType.APPLICATION_JSON)
     @WebTrace
     public Response list(@HeaderParam("x-slide4vr-auth") final String token) throws IOException, ParseException {
-        // var userId = "0m3ItnvCMQhbACV9rR5mkdmFOns2";
-
-        // System.out.println(token2);
-        // var token = generate(userId);
-
-        final var userId = tokenService.getUserId(token);
+        var userId = tokenService.getUserId(token);
         System.out.println(userId);
         System.out.println(tokenService.getToken(userId));
 
@@ -82,18 +74,7 @@ public class SlideApiResource {
     @WebTrace
     @Path("user")
     public Response getUser(@HeaderParam("x-slide4vr-auth") final String token) throws IOException, ParseException {
-        // var userId = "0m3ItnvCMQhbACV9rR5mkdmFOns2";
-
-        // System.out.println(token2);
-        // var token = generate(userId);
-
-        final var userId = tokenService.getUserId(token);
-        // System.out.println(userId);
-        // System.out.println(tokenService.getToken(userId));
-
-        // logger.debug("getList", $("id", userId));
-
-
+        var userId = tokenService.getUserId(token);
         return Response.ok(new ObjectMapper().writeValueAsString(Map.of("userId", userId))).build();
     }
 
@@ -133,7 +114,7 @@ public class SlideApiResource {
         final var key = slideService.create(userId, slide);
         pptx2pngService.request(userId, key, slide.getContentType(), slide.getExtention());
 
-        return Response.ok(String.format("{message:'%s', data-size:'%d'}", slide.getTitle(), slide.getSlide().length))
+        return Response.ok(String.format("{messag   e:'%s', data-size:'%d'}", slide.getTitle(), slide.getSlide().length))
                 .build();
     }
 
@@ -142,10 +123,9 @@ public class SlideApiResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @WebTrace
-    @Authenticated
-    public Response delete(@Context final SecurityContext ctx, @PathParam("key") final String key) throws IOException {
-        final var id = ctx.getUserPrincipal().getName();
-        final var result = slideService.delete(id, key);
+    public Response delete(@HeaderParam("x-slide4vr-auth") final String token, @PathParam("key") final String key) throws IOException {
+        final var id = tokenService.getUserId(token);
+        var result = slideService.delete(id, key);
 
         return Response.ok(String.format("{delete:'%s', status: %s}", key, result)).build();
     }
