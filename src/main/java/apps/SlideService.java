@@ -18,7 +18,6 @@ import com.google.cloud.datastore.DatastoreOptions;
 import com.google.cloud.datastore.Entity;
 import com.google.cloud.datastore.PathElement;
 import com.google.cloud.datastore.Query;
-import com.google.cloud.datastore.StructuredQuery;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 
@@ -72,7 +71,8 @@ public class SlideService {
     }
 
     @Trace
-    public Map<String, Object> getSlide(String userId, String key) throws NotFoundResourceException {
+    public Map<String, Object> getSlide(String userId, String key)
+            throws NotFoundResourceException {
         var datastore = DatastoreOptions.getDefaultInstance().getService();
         var slideKey = datastore.newKeyFactory().addAncestors(PathElement.of("User", userId))
                 .setKind("Slide").newKey(key);
@@ -83,7 +83,7 @@ public class SlideService {
             return Map.of("title", slide.getString("title"), "created_at",
                     slide.getString("created_at"), "slides", items);
         } else {
-           throw new NotFoundResourceException("Not Found " + userId + "/" + key);
+            throw new NotFoundResourceException("Not Found " + userId + "/" + key);
         }
     }
 
@@ -95,13 +95,13 @@ public class SlideService {
      * @throws NotFoundResourceException
      */
     @Trace
-    public Map<String, Map<String, List<String>>> getSlide4Vcas(String userId,
-            String key) throws NotFoundResourceException {
+    public Map<String, Map<String, List<String>>> getSlide4Vcas(String userId, String key)
+            throws NotFoundResourceException {
         var items = getSlideItems(userId, key);
         if (!items.isEmpty()) {
             return Map.of("whiteboard", Map.of("source_urls", items));
         } else {
-           throw new NotFoundResourceException("Not Found " + userId + "/" + key);
+            throw new NotFoundResourceException("Not Found " + userId + "/" + key);
         }
     }
 
@@ -121,24 +121,24 @@ public class SlideService {
     @Trace
     public List<Map<String, Object>> listSlides(String userId) throws ParseException {
         var datastore = DatastoreOptions.getDefaultInstance().getService();
-        // var query = Query.newGqlQueryBuilder(Query.ResultType.ENTITY,
-        // "SELECT * FROM Slide WHERE __key__ HAS ANCESTOR KEY(User, @id)")
-        // .setBinding("id", id)
-        // .build();
-
-        var query = Query.newEntityQueryBuilder().setKind("Slide")
-                .setFilter(StructuredQuery.PropertyFilter
-                        .hasAncestor(datastore.newKeyFactory().setKind("User").newKey(userId)))
+        var gql = "SELECT * FROM Slide WHERE __key__ HAS ANCESTOR KEY(User, '" + userId + "')";
+        var query = Query.newGqlQueryBuilder(Query.ResultType.ENTITY, gql).setAllowLiteral(true)
                 .build();
+
         var result = new ArrayList<Map<String, Object>>();
         var slides = datastore.run(query);
         while (slides.hasNext()) {
             var slide = slides.next();
+            var createdAt = toDate(slide.getString("created_at"));
+            var waitTime = System.currentTimeMillis() - createdAt.getTime();
+            if (slide.contains("is_uploaded") && slide.getBoolean("is_uploaded") == false && waitTime > 3 * 60 * 1000){
+                continue;
+            }
             result.add(Map.of("key", slide.getKey().getName(), "title", slide.getString("title"),
                     "thumbnail", (slide.contains("thumbnail")) ? slide.getString("thumbnail") : "",
                     "is_uploaded",
                     (slide.contains("is_uploaded")) ? slide.getBoolean("is_uploaded") : "false",
-                    "created_at", toDate(slide.getString("created_at"))));
+                    "created_at", createdAt));
         }
         return result;
     }
