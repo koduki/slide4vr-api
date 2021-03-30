@@ -2,6 +2,10 @@ package apps;
 
 import static dev.nklab.jl2.Extentions.$;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.text.ParseException;
 import java.util.Map;
 import javax.inject.Inject;
@@ -18,6 +22,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
 import dev.nklab.jl2.web.logging.Logger;
 import dev.nklab.jl2.web.profile.WebTrace;
@@ -36,6 +41,9 @@ public class SlideApiResource {
 
     @Inject
     TokenService tokenService;
+
+    @ConfigProperty(name = "slide4vr.healthcheck.url")
+    String healthcheckUrl;
 
     @GET
     @Path("{id}/{key}")
@@ -73,11 +81,20 @@ public class SlideApiResource {
             throw new AuthException("token is empty");
         }
         var userId = tokenService.getUserId(token);
-
         logger.debug("getList", $("id", userId));
+        preSpinUp();
 
         final var slides = slideService.listSlides(userId);
         return Response.ok(new ObjectMapper().writeValueAsString(slides)).build();
+    }
+
+    private void preSpinUp() {
+        var client = HttpClient.newHttpClient();
+        var request = HttpRequest.newBuilder().GET().version(HttpClient.Version.HTTP_1_1)
+                .header("Content-Type", "application/json").uri(URI.create(healthcheckUrl));
+
+        client.sendAsync(request.build(), HttpResponse.BodyHandlers.ofString())
+                .thenApply(HttpResponse::body).thenAccept(System.out::println);
     }
 
     @GET

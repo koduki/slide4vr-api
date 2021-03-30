@@ -7,6 +7,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.security.Authenticated;
 import java.io.IOException;
 import javax.inject.Inject;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -17,6 +21,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import dev.nklab.jl2.web.profile.WebTrace;
 import dev.nklab.jl2.web.logging.Logger;
@@ -39,6 +44,9 @@ public class SlideResource {
     @Inject
     Pptx2pngService pptx2pngService;
 
+    @ConfigProperty(name = "slide4vr.healthcheck.url")
+    String healthcheckUrl;
+
     @GET
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -48,9 +56,20 @@ public class SlideResource {
         var id = ctx.getUserPrincipal().getName();
         logger.debug("getList", $("id", id));
 
+        preSpinUp();
+
         var slides = slideService.listSlides(id);
         return Response.ok(new ObjectMapper().writeValueAsString(slides))
                 .build();
+    }
+
+    private void preSpinUp() {
+        var client = HttpClient.newHttpClient();
+        var request = HttpRequest.newBuilder().GET().version(HttpClient.Version.HTTP_1_1)
+                .header("Content-Type", "application/json").uri(URI.create(healthcheckUrl));
+
+        client.sendAsync(request.build(), HttpResponse.BodyHandlers.ofString())
+                .thenApply(HttpResponse::body).thenAccept(System.out::println);
     }
 
     @GET

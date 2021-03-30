@@ -32,6 +32,7 @@ import fw.NotFoundResourceException;
  */
 @Dependent
 public class SlideService {
+    final static int TIMEOUT = 3 * 60 * 1000;
 
     @Inject
     SlideUploader uploader;
@@ -79,12 +80,28 @@ public class SlideService {
         var slide = datastore.get(slideKey);
         var items = getSlideItems(userId, key);
 
-        if (!items.isEmpty()) {
-            return Map.of("title", slide.getString("title"), "created_at",
-                    slide.getString("created_at"), "slides", items);
-        } else {
-            throw new NotFoundResourceException("Not Found " + userId + "/" + key);
+        try {
+            var createdAt = toDate(slide.getString("created_at"));
+            var waitTime = System.currentTimeMillis() - createdAt.getTime();
+
+            if (!items.isEmpty()) {
+                return Map.of(
+                    "title", slide.getString("title"), 
+                    "created_at", slide.getString("created_at"), 
+                    "slides", items,
+                    "is_uploaded", true
+                );
+            } else if(items.isEmpty() && waitTime < TIMEOUT) {
+                return Map.of(
+                    "is_uploaded", false
+                );
+            } else {
+                throw new NotFoundResourceException("Not Found " + userId + "/" + key);
+            }
+        } catch (ParseException ex) {
+            throw new RuntimeException(ex);
         }
+
     }
 
     /**
@@ -131,7 +148,7 @@ public class SlideService {
             var slide = slides.next();
             var createdAt = toDate(slide.getString("created_at"));
             var waitTime = System.currentTimeMillis() - createdAt.getTime();
-            if (slide.contains("is_uploaded") && slide.getBoolean("is_uploaded") == false && waitTime > 3 * 60 * 1000){
+            if (slide.contains("is_uploaded") && slide.getBoolean("is_uploaded") == false && waitTime > TIMEOUT){
                 continue;
             }
             result.add(Map.of("key", slide.getKey().getName(), "title", slide.getString("title"),
