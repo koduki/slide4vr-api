@@ -79,6 +79,9 @@ public class SlideService {
         var slideKey = datastore.newKeyFactory().addAncestors(PathElement.of("User", userId))
                 .setKind("Slide").newKey(key);
         var slide = datastore.get(slideKey);
+        if (slide == null) {
+            throw new NotFoundResourceException("Not Found " + userId + "/" + key);
+        }
         var items = getSlideItems(userId, key);
 
         try {
@@ -86,16 +89,10 @@ public class SlideService {
             var waitTime = System.currentTimeMillis() - createdAt.getTime();
 
             if (!items.isEmpty()) {
-                return Map.of(
-                    "title", slide.getString("title"), 
-                    "created_at", slide.getString("created_at"), 
-                    "slides", items,
-                    "is_uploaded", true
-                );
-            } else if(items.isEmpty() && waitTime < timeoutMinute * 60 * 3600) {
-                return Map.of(
-                    "is_uploaded", false
-                );
+                return Map.of("title", slide.getString("title"), "created_at",
+                        slide.getString("created_at"), "slides", items, "is_uploaded", true);
+            } else if (items.isEmpty() && waitTime < timeoutMinute * 60 * 1000) {
+                return Map.of("is_uploaded", false);
             } else {
                 throw new NotFoundResourceException("Not Found " + userId + "/" + key);
             }
@@ -149,7 +146,8 @@ public class SlideService {
             var slide = slides.next();
             var createdAt = toDate(slide.getString("created_at"));
             var waitTime = System.currentTimeMillis() - createdAt.getTime();
-            if (slide.contains("is_uploaded") && slide.getBoolean("is_uploaded") == false && waitTime > timeoutMinute * 60 * 3600 ){
+            if (slide.contains("is_uploaded") && slide.getBoolean("is_uploaded") == false
+                    && waitTime > timeoutMinute * 60 * 1000) {
                 continue;
             }
             result.add(Map.of("key", slide.getKey().getName(), "title", slide.getString("title"),
