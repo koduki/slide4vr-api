@@ -144,6 +144,8 @@ public class SlideApiResource {
         var id = tokenService.getUserId(token);
         var result = slideService.delete(id, key);
 
-        return Response.ok(String.format("{delete:'%s', status: %s}", key, result)).build();
+        return Response
+                .ok(new ObjectMapper().writeValueAsString(Map.of("delete", key, "status", result)))
+                .build();
     }
 }

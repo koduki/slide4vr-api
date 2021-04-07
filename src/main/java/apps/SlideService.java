@@ -32,8 +32,6 @@ import fw.NotFoundResourceException;
  */
 @Dependent
 public class SlideService {
-    final static int TIMEOUT = 3 * 60 * 1000;
-
     @Inject
     SlideUploader uploader;
 
@@ -41,6 +39,9 @@ public class SlideService {
     String projectId;
     @ConfigProperty(name = "slide4vr.gcp.bucketname.slide")
     String slideBucket;
+
+    @ConfigProperty(name = "slide4vr.transform.timeout")
+    int timeoutMinute;
 
     @Trace
     public String create(String userId, SlideFormBean slide) {
@@ -91,7 +92,7 @@ public class SlideService {
                     "slides", items,
                     "is_uploaded", true
                 );
-            } else if(items.isEmpty() && waitTime < TIMEOUT) {
+            } else if(items.isEmpty() && waitTime < timeoutMinute * 60 * 3600) {
                 return Map.of(
                     "is_uploaded", false
                 );
@@ -148,7 +149,7 @@ public class SlideService {
             var slide = slides.next();
             var createdAt = toDate(slide.getString("created_at"));
             var waitTime = System.currentTimeMillis() - createdAt.getTime();
-            if (slide.contains("is_uploaded") && slide.getBoolean("is_uploaded") == false && waitTime > TIMEOUT){
+            if (slide.contains("is_uploaded") && slide.getBoolean("is_uploaded") == false && waitTime > timeoutMinute * 60 * 3600 ){
                 continue;
             }
             result.add(Map.of("key", slide.getKey().getName(), "title", slide.getString("title"),
