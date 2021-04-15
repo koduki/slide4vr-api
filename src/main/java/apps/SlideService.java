@@ -5,6 +5,7 @@ import static dev.nklab.jl2.web.gcp.datastore.Extentions.noindex;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -156,6 +157,7 @@ public class SlideService {
                     (slide.contains("is_uploaded")) ? slide.getBoolean("is_uploaded") : "false",
                     "created_at", createdAt));
         }
+        Collections.sort(result, (x1, x2) -> ((Date)x2.get("created_at")).compareTo((Date)(x1.get("created_at"))));
         return result;
     }
 
