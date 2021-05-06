@@ -73,7 +73,8 @@ public class TokenService {
 
     public String getUserId(final String token) throws AuthException {
         var datastore = DatastoreOptions.getDefaultInstance().getService();
-        System.out.println("query: " + token);
+        System.out.println("query2: " + token);
+        
         var query = Query.newEntityQueryBuilder().setKind("ApplicationToken").setFilter(eq("token", token)).build();
         var rs = datastore.run(query);
         var result = "";

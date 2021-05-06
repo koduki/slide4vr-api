@@ -64,12 +64,12 @@ public class SlideResource {
     }
 
     private void preSpinUp() {
-        var client = HttpClient.newHttpClient();
-        var request = HttpRequest.newBuilder().GET().version(HttpClient.Version.HTTP_1_1)
-                .header("Content-Type", "application/json").uri(URI.create(healthcheckUrl));
-
-        client.sendAsync(request.build(), HttpResponse.BodyHandlers.ofString())
-                .thenApply(HttpResponse::body).thenAccept(System.out::println);
+//        var client = HttpClient.newHttpClient();
+//        var request = HttpRequest.newBuilder().GET().version(HttpClient.Version.HTTP_1_1)
+//                .header("Content-Type", "application/json").uri(URI.create(healthcheckUrl));
+//
+//        client.sendAsync(request.build(), HttpResponse.BodyHandlers.ofString())
+//                .thenApply(HttpResponse::body).thenAccept(System.out::println);
     }
 
     @GET

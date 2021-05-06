@@ -2,10 +2,6 @@ package apps;
 
 import static dev.nklab.jl2.Extentions.$;
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.text.ParseException;
 import java.util.Map;
 import javax.inject.Inject;
@@ -27,6 +23,11 @@ import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
 import dev.nklab.jl2.web.logging.Logger;
 import dev.nklab.jl2.web.profile.WebTrace;
 import fw.AuthException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.List;
 
 @Path("/api/slide")
 public class SlideApiResource {
@@ -89,12 +90,12 @@ public class SlideApiResource {
     }
 
     private void preSpinUp() {
-        // var client = HttpClient.newHttpClient();
-        // var request = HttpRequest.newBuilder().GET().version(HttpClient.Version.HTTP_1_1)
-        //         .header("Content-Type", "application/json").uri(URI.create(healthcheckUrl));
+        var client = HttpClient.newHttpClient();
+        var request = HttpRequest.newBuilder().GET().version(HttpClient.Version.HTTP_1_1)
+                .header("Content-Type", "application/json").uri(URI.create(healthcheckUrl));
 
-        // client.sendAsync(request.build(), HttpResponse.BodyHandlers.ofString())
-        //         .thenApply(HttpResponse::body).thenAccept(System.out::println);
+        client.sendAsync(request.build(), HttpResponse.BodyHandlers.ofString())
+                .thenApply(HttpResponse::body).thenAccept(System.out::println);
     }
 
     @GET
@@ -126,9 +127,13 @@ public class SlideApiResource {
         pptx2pngService.request(userId, key, slideForm.getContentType(), slideForm.getExtention());
 
         return Response.ok(new ObjectMapper()
-                .writeValueAsString(Map.of("title", slideForm.getTitle(), "length",
-                        slideForm.getSlide().length, "path", "/api/slide/" + userId + "/" + key)))
-                .build();
+                .writeValueAsString(
+                        List.of(Map.of(
+                                "title", slideForm.getTitle(),
+                                "length", slideForm.getSlide().length,
+                                "path", "/api/slide/" + userId + "/" + key))
+                )
+        ).build();
     }
 
     @DELETE
@@ -145,7 +150,10 @@ public class SlideApiResource {
         var result = slideService.delete(id, key);
 
         return Response
-                .ok(new ObjectMapper().writeValueAsString(Map.of("delete", key, "status", result)))
-                .build();
+                .ok(new ObjectMapper().writeValueAsString(
+                        Map.of(
+                                "delete", key,
+                                "status", result))
+                ).build();
     }
 }

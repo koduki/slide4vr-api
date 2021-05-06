@@ -104,7 +104,7 @@ public class SlideService {
     }
 
     /**
-     * 
+     *
      * @param userId
      * @param key
      * @return
@@ -157,7 +157,7 @@ public class SlideService {
                     (slide.contains("is_uploaded")) ? slide.getBoolean("is_uploaded") : "false",
                     "created_at", createdAt));
         }
-        Collections.sort(result, (x1, x2) -> ((Date)x2.get("created_at")).compareTo((Date)(x1.get("created_at"))));
+        Collections.sort(result, (x1, x2) -> ((Date) x2.get("created_at")).compareTo((Date) (x1.get("created_at"))));
         return result;
     }
 
