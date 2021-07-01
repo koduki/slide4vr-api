@@ -13,16 +13,18 @@ import javax.ws.rs.ext.Provider;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.nklab.jl2.web.logging.Logger;
+import java.util.List;
 
 @ApplicationScoped
 @Provider
 public class JsonExceptionMapper implements ExceptionMapper<Exception> {
+
     private static final Logger LOGGER = Logger.getLogger("slide4vr");
 
     @Override
     public Response toResponse(Exception exception) {
         var errorMessage = (exception.getMessage() == null) ? "" : exception.getMessage();
-        var msg = Map.of("error", exception.getClass().getName(), "message", errorMessage);
+        var msg = List.of(Map.of("error", exception.getClass().getName(), "message", errorMessage));
         if (exception instanceof AuthException) {
             return toAuthErrorResponse((AuthException) exception, msg);
         } else if (exception instanceof NotFoundResourceException) {
@@ -32,9 +34,10 @@ public class JsonExceptionMapper implements ExceptionMapper<Exception> {
         }
     }
 
-    Response toAuthErrorResponse(AuthException exception, Map<String, String> msg) {
+    Response toAuthErrorResponse(AuthException exception, List<Map<String, String>> msg) {
         try {
-            LOGGER.warn("auth-failed", $("message", exception.getMessage()),
+            LOGGER.warn("auth-failed",
+                    $("message", exception.getMessage()),
                     $("stacktrace", parseStackTrace(exception)));
 
             return Response.status(Response.Status.FORBIDDEN)
@@ -44,9 +47,10 @@ public class JsonExceptionMapper implements ExceptionMapper<Exception> {
         }
     }
 
-    Response toNotFoundErrorResponse(NotFoundResourceException exception, Map<String, String> msg) {
+    Response toNotFoundErrorResponse(NotFoundResourceException exception, List< Map<String, String>> msg) {
         try {
-            LOGGER.warn("not-found", $("message", exception.getMessage()),
+            LOGGER.warn("not-found",
+                    $("message", exception.getMessage()),
                     $("stacktrace", parseStackTrace(exception)));
 
             return Response.status(Response.Status.NOT_FOUND)
@@ -57,7 +61,7 @@ public class JsonExceptionMapper implements ExceptionMapper<Exception> {
         }
     }
 
-    Response toInternalErrorResponse(Exception exception, Map<String, String> msg) {
+    Response toInternalErrorResponse(Exception exception, List<Map<String, String>> msg) {
         try {
             LOGGER.severe(exception);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
@@ -68,7 +72,7 @@ public class JsonExceptionMapper implements ExceptionMapper<Exception> {
     }
 
     String parseStackTrace(Exception exception) {
-        try (var sw = new StringWriter(); var pw = new PrintWriter(sw);) {
+        try ( var sw = new StringWriter();  var pw = new PrintWriter(sw);) {
             exception.printStackTrace(pw);
             pw.flush();
 
