@@ -55,7 +55,6 @@ public class UserResource {
     @Path("apptoken/reset")
     public Response resetAppToken(@Context SecurityContext ctx) throws IOException, ParseException {
         var userId = ctx.getUserPrincipal().getName();
-System.out.println(userId);
         var token = Map.of("token", tokenService.generate(userId));
         return Response.ok(new ObjectMapper().writeValueAsString(token)).build();
     }

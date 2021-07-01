@@ -12,8 +12,6 @@ import javax.enterprise.context.Initialized;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
-import com.google.auth.oauth2.GoogleCredentials;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
@@ -28,11 +26,9 @@ public class Bootstrap {
 
     @ConfigProperty(name = "quarkus.http.cors.origins")
     String cors;
-    
+
     public void handle(@Observes @Initialized(ApplicationScoped.class) Object event) throws IOException {
         tracingBootstrap.init();
         System.out.println("CORS ORIGN: " + cors);
-
-
     }
 }

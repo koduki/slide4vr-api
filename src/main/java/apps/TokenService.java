@@ -10,12 +10,12 @@ import java.util.TimeZone;
 import java.util.UUID;
 
 import javax.enterprise.context.Dependent;
-import javax.ws.rs.ForbiddenException;
 
 import com.google.cloud.datastore.DatastoreOptions;
 import com.google.cloud.datastore.Entity;
 import com.google.cloud.datastore.PathElement;
 import com.google.cloud.datastore.Query;
+import fw.AuthException;
 
 /**
  *
@@ -58,22 +58,23 @@ public class TokenService {
                 and(hasAncestor(datastore.newKeyFactory().setKind("User").newKey(userId)), eq("is_enable", true)))
                 .build();
         var rs = datastore.run(query);
-        
+
         var result = "";
         while (rs.hasNext()) {
             result = rs.next().getString("token");
         }
 
-        if (result.isEmpty()){
+        if (result.isEmpty()) {
             result = generate(userId);
         }
 
         return result;
     }
 
-    public String getUserId(final String token) {
+    public String getUserId(final String token) throws AuthException {
         var datastore = DatastoreOptions.getDefaultInstance().getService();
-        System.out.println("query: " + token);
+        System.out.println("query2: " + token);
+
         var query = Query.newEntityQueryBuilder().setKind("ApplicationToken").setFilter(eq("token", token)).build();
         var rs = datastore.run(query);
         var result = "";
@@ -81,8 +82,8 @@ public class TokenService {
             result = rs.next().getKey().getAncestors().get(0).getName();
         }
 
-        if (result.isEmpty()){
-            throw new RuntimeException("Inappropriate Token");
+        if (result.isEmpty()) {
+            throw new AuthException("Invalid Token: " + token);
         }
 
         return result;
