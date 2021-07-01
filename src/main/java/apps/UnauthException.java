@@ -1,6 +1,7 @@
 package apps;
 
 public class UnauthException extends RuntimeException {
+
     /**
      *
      */

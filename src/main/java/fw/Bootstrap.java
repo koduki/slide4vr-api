@@ -26,7 +26,7 @@ public class Bootstrap {
 
     @ConfigProperty(name = "quarkus.http.cors.origins")
     String cors;
-    
+
     public void handle(@Observes @Initialized(ApplicationScoped.class) Object event) throws IOException {
         tracingBootstrap.init();
         System.out.println("CORS ORIGN: " + cors);

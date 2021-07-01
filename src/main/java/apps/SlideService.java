@@ -19,6 +19,7 @@ import com.google.cloud.datastore.DatastoreOptions;
 import com.google.cloud.datastore.Entity;
 import com.google.cloud.datastore.PathElement;
 import com.google.cloud.datastore.Query;
+
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 
@@ -33,6 +34,7 @@ import fw.NotFoundResourceException;
  */
 @Dependent
 public class SlideService {
+
     @Inject
     SlideUploader uploader;
 

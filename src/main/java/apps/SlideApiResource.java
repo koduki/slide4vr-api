@@ -14,20 +14,20 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
-import dev.nklab.jl2.web.logging.Logger;
-import dev.nklab.jl2.web.profile.WebTrace;
 import fw.AuthException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
+import dev.nklab.jl2.web.logging.Logger;
+import dev.nklab.jl2.web.profile.WebTrace;
 
 @Path("/api/slide")
 public class SlideApiResource {
@@ -76,6 +76,7 @@ public class SlideApiResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @WebTrace
+
     public Response list(@HeaderParam("x-slide4vr-auth") final String token)
             throws IOException, ParseException {
         if (token == null || token.isBlank()) {
@@ -134,6 +135,7 @@ public class SlideApiResource {
                                 "path", "/api/slide/" + userId + "/" + key))
                 )
         ).build();
+
     }
 
     @DELETE
@@ -155,5 +157,6 @@ public class SlideApiResource {
                                 "delete", key,
                                 "status", result))
                 ).build();
+
     }
 }
