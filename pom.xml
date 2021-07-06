@@ -3,9 +3,9 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <modelVersion>4.0.0</modelVersion>
     <groupId>pptx4vr</groupId>
-    <artifactId>slide4vr-api</artifactId>
+    <artifactId>slide4vr-backend</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <name>slide4vr-api</name>
+    <name>slide4vr-backend</name>
     <properties>
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
         <maven.compiler.parameters>true</maven.compiler.parameters>

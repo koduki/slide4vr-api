@@ -23,6 +23,7 @@ import dev.nklab.jl2.web.profile.WebTrace;
 import dev.nklab.jl2.web.logging.Logger;
 import java.text.ParseException;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.QueryParam;
 import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
 
@@ -38,7 +39,7 @@ public class SlideResource {
     SlideService slideService;
 
     @Inject
-    Pptx2pngService pptx2pngService;
+    Transform2pngService pptx2pngService;
 
     @ConfigProperty(name = "slide4vr.healthcheck.url")
     String healthcheckUrl;
@@ -98,12 +99,16 @@ public class SlideResource {
     @Produces(MediaType.APPLICATION_JSON)
     @WebTrace
     @Authenticated
-    public Response create(@Context SecurityContext ctx, MultipartFormDataInput form) throws IOException {
+    public Response create(
+            @Context SecurityContext ctx,
+            MultipartFormDataInput form,
+            @HeaderParam("X-Cloud-Trace-Context") final String tracecontext
+    ) throws IOException {
         var slide = new SlideFormBean(form.getFormDataMap());
 
         var id = ctx.getUserPrincipal().getName();
         var key = slideService.create(id, slide);
-        pptx2pngService.request(id, key, slide.getContentType(), slide.getExtention());
+        pptx2pngService.request(id, key, slide.getContentType(), slide.getExtention(), tracecontext);
 
         return Response.ok(
                 String.format("{message:'%s', data-size:'%d'}",

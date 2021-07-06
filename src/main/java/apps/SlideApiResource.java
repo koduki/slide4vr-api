@@ -38,7 +38,7 @@ public class SlideApiResource {
     SlideService slideService;
 
     @Inject
-    Pptx2pngService pptx2pngService;
+    Transform2pngService pptx2pngService;
 
     @Inject
     TokenService tokenService;
@@ -118,6 +118,7 @@ public class SlideApiResource {
     @Produces(MediaType.APPLICATION_JSON)
     @WebTrace
     public Response create(@HeaderParam("x-slide4vr-auth") final String token,
+            @HeaderParam("X-Cloud-Trace-Context") final String tracecontext,
             final MultipartFormDataInput form) throws IOException {
         var slideForm = new SlideFormBean(form.getFormDataMap());
         if (token == null || token.isBlank()) {
@@ -125,7 +126,7 @@ public class SlideApiResource {
         }
         var userId = tokenService.getUserId(token);
         var key = slideService.create(userId, slideForm);
-        pptx2pngService.request(userId, key, slideForm.getContentType(), slideForm.getExtention());
+        pptx2pngService.request(userId, key, slideForm.getContentType(), slideForm.getExtention(), tracecontext);
 
         return Response.ok(new ObjectMapper()
                 .writeValueAsString(
